@@ -1,0 +1,12 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+*.out
+__pycache__/
+*.pyc
+backen/uploads/
+.env*
+!.env.example

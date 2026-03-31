@@ -1,0 +1,5 @@
+{
+  "name": "HSE Dashboard",
+  "description": "Health, Safety, and Environment (HSE) dashboard for incident reporting and risk management.",
+  "requestFramePermissions": ["camera"]
+}
