@@ -1,30 +1,64 @@
+// src/hooks/useActions.ts
+
 import { useState } from 'react';
-import { apiRequest } from '../services';
+import { apiRequest } from '../services/api';
 import type { ActionCorrective } from '../types';
+
+interface ActionCreatePayload {
+  description: string;
+  dateDebut: string;
+  dateFinPrevue: string;
+  idResponsableSecteur?: number;
+}
 
 export function useActions() {
   const [currentAction, setCurrentAction] = useState<ActionCorrective | null>(null);
-  const [error, setError] = useState('');
+  const [actions,       setActions]       = useState<ActionCorrective[]>([]);
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState('');
 
+  /** Charge une action corrective par son id */
   const load = async (actionId: number) => {
+    setLoading(true);
+    setError('');
     try {
       const data = await apiRequest<ActionCorrective>(`/api/actions/${actionId}`);
       setCurrentAction(data);
-      setError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur chargement action');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const createForIncident = async (
-    incidentId: number,
-    payload: { description: string; dateDebut: string; dateFinPrevue: string },
-  ) => {
+  /** Charge toutes les actions correctives d'un incident */
+  const loadForIncident = async (incidentId: number) => {
+    setLoading(true);
     setError('');
-    return apiRequest(`/api/incidents/${incidentId}/actions`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    try {
+      const data = await apiRequest<ActionCorrective[]>(`/api/incidents/${incidentId}/actions`);
+      setActions(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erreur chargement actions');
+      setActions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Crée une action corrective pour un incident.
+   * L'id_incident est résolu par l'URL (path param) — jamais saisi manuellement.
+   */
+  const createForIncident = async (incidentId: number, payload: ActionCreatePayload) => {
+    setError('');
+    const result = await apiRequest<{ id_action: number; message: string }>(
+      `/api/incidents/${incidentId}/actions`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    );
+    // Recharger la liste après création
+    await loadForIncident(incidentId);
+    return result;
   };
 
   const validate = async (actionId: number) => {
@@ -40,5 +74,5 @@ export function useActions() {
     });
   };
 
-  return { currentAction, error, load, createForIncident, validate, close };
+  return { currentAction, actions, loading, error, load, loadForIncident, createForIncident, validate, close };
 }

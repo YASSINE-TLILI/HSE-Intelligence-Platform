@@ -17,16 +17,22 @@ class Settings:
 
     api_port: int = int(os.getenv("API_PORT", "4002"))
     app_url: str = os.getenv("APP_URL", "http://localhost:3000")
-    jwt_secret: str = os.getenv("JWT_SECRET", "change-me-please")
-    company_email_domain: str = os.getenv("COMPANY_EMAIL_DOMAIN", "company.com")
-    admin_approval_email: str = os.getenv("ADMIN_APPROVAL_EMAIL", "admin@company.local")
+    
 
-    smtp_host: str = os.getenv("SMTP_HOST", "")
-    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
-    smtp_secure: bool = os.getenv("SMTP_SECURE", "false").lower() == "true"
-    smtp_user: str = os.getenv("SMTP_USER", "")
-    smtp_pass: str = os.getenv("SMTP_PASS", "")
-    smtp_from: str = os.getenv("SMTP_FROM", "no-reply@company.local")
+    # ── SMTP ──────────────────────────────────────────────────────────────────
+    # Gmail SSL (port 465) — utiliser un "mot de passe d'application" Google
+    smtp_host: str   = os.getenv("SMTP_HOST",   "smtp.gmail.com")
+    smtp_port: int   = int(os.getenv("SMTP_PORT", "465"))
+    smtp_secure: bool = os.getenv("SMTP_SECURE", "true").lower() == "true"
+    smtp_user: str   = os.getenv("SMTP_USER",   "yassinetilili50002003@gmail.com")
+    smtp_pass: str   = os.getenv("SMTP_PASS",   "qtnf hymf pnwz cvtl")
+    smtp_from: str   = os.getenv("SMTP_FROM",   "yassinetilili50002003@gmail.com")
+
+    # ── Ngrok ─────────────────────────────────────────────────────────────────
+    # URL publique ngrok pour les liens dans les emails.
+    # Mettre à jour dans .env à chaque redémarrage ngrok (si pas de domaine fixe).
+    # Exemple : NGROK_URL=https://xxxx.ngrok-free.app
+    ngrok_url: str = os.getenv("NGROK_URL", "http://localhost:5173")
 
     default_declarant_id: int = int(os.getenv("DEFAULT_DECLARANT_ID", "1"))
     default_secteur_id: int = int(os.getenv("DEFAULT_SECTEUR_ID", "1"))

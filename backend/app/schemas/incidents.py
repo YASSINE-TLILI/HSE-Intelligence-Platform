@@ -1,10 +1,12 @@
+
 from pydantic import BaseModel
+from typing import Literal
 
 
 class IncidentCreateRequest(BaseModel):
-    title: str
     description: str
     priority: str
+    type_incident: Literal["incident", "anomalie"] = "incident"
     zone: str | None = None
     entiteId: int | None = None
     secteurId: int | None = None
@@ -14,9 +16,9 @@ class IncidentCreateRequest(BaseModel):
 
 
 class IncidentUpdateRequest(BaseModel):
-    title: str
     description: str
     priority: str
+    type_incident: Literal["incident", "anomalie"] = "incident"
     zone: str | None = None
     entiteId: int | None = None
     secteurId: int | None = None

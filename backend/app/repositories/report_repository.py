@@ -46,3 +46,10 @@ class ReportRepository:
         if row:
             row["contenu_json"] = json.loads(row["contenu_json"])
         return row
+    def update_type_incident(self, incident_id: int, type_incident: str) -> None:
+        """Met à jour le type d'incident (incident/anomalie)."""
+        with db_cursor() as (_conn, cursor):
+            cursor.execute(
+                "UPDATE incident SET type_incident = %s WHERE id_incident = %s",
+                (type_incident, incident_id),
+            )

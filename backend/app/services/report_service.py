@@ -118,7 +118,7 @@ class ReportService:
         _notif_service.create_for_roles(
             message=f"Rapport HSE #{report_id} disponible.",
             notification_type="RAPPORT_DISPONIBLE",
-            roles=["RESPONSABLE_HSE", "RESPONSABLE_ZONE", "RESPONSABLE_SECTEUR", "ADMINISTRATEUR"],
+            roles=["RESPONSABLE_ENTITE", "RESPONSABLE_ZONE", "RESPONSABLE_SECTEUR", "ADMINISTRATEUR"],
         )
         return {"idReport": report_id, "content": content}
 

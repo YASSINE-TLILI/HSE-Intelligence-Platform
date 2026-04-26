@@ -40,11 +40,13 @@ class AuthService:
         
         if payload.role in ["DECLARANT", "RESPONSABLE_SECTEUR"] and not payload.id_secteur:
            raise ValidationError("Secteur obligatoire.")
+        if payload.role in ["SOUS_TRAITANT"] and not payload.id_secteur and not payload.id_entreprise:
+           raise ValidationError("Secteur et entreprise obligatoire.")
 
         if payload.role == "RESPONSABLE_ZONE" and not payload.id_zone:
            raise ValidationError("Zone obligatoire.")
 
-        if payload.role == "RESPONSABLE_HSE" and not payload.id_entite:
+        if payload.role == "RESPONSABLE_ENTITE" and not payload.id_entite:
            raise ValidationError("Entité obligatoire.")
 
         if payload.role == "ADMINISTRATEUR" and not payload.id_site:
@@ -70,6 +72,7 @@ class AuthService:
             id_zone=payload.id_zone,
             id_entite=payload.id_entite,
             id_site=payload.id_site, 
+            id_entreprise=payload.id_entreprise,
         )
         return {"message": "Inscription réussie. Vous pouvez maintenant vous connecter."}
 
@@ -112,38 +115,66 @@ class AuthService:
         _auth_repo.mark_token_used(row["id_token"])
         _auth_repo.complete_request(row["id_request"])
         return {"message": "Mot de passe défini avec succès."}
-
+    
     def login(self, payload: LoginRequest) -> dict:
+
         user = _user_repo.find_by_email(payload.email)
+
+       
+
         if not user:
+            
             raise ValidationError("Identifiants invalides.")
+
+       
+        
+
+       
         if int(user.get("active") or 0) != 1:
+            
             raise ForbiddenError("Compte inactif.")
 
+       
         stored_password = user.get("mot_passe") or ""
+
         password_ok = verify_password(payload.password, stored_password)
 
-        # Support mot de passe en clair legacy — upgrade automatique vers bcrypt
         if not password_ok and stored_password and not is_bcrypt_hash(stored_password):
             password_ok = payload.password == stored_password
+
             if password_ok:
-                _user_repo.update_password(user["id"], hash_password(payload.password))
+                _user_repo.update_password(
+                    user["id"],
+                    hash_password(payload.password)
+                )
 
         if not password_ok:
             raise ValidationError("Identifiants invalides.")
 
-        return {
-            "user": {
-                "id": user["id"],
-                "nom": user["nom"],
-                "prenom": user["prenom"],
-                "email": user["email"],
-                "role": user["role"],
-                "active": user["active"],
-            }
+        
+        response_user = {
+            "id": user["id"],
+            "nom": user["nom"],
+            "prenom": user["prenom"],
+            "email": user["email"],
+            "role": user["role"],
+            "active": user["active"],
+            "scope_id": None,  
         }
-    
-    
+
+        
+        if user["role"] == "RESPONSABLE_SECTEUR":
+            response_user["scope_id"] = user.get("id_secteur")
+
+        elif user["role"] == "RESPONSABLE_ZONE":
+            response_user["scope_id"] = user.get("id_zone")
+
+        elif user["role"] == "RESPONSABLE_ENTITE":
+            response_user["scope_id"] = user.get("id_entite")
+
+        
+
+        return {"user": response_user}
     def logout(self, token: str | None) -> dict:
         if token:
             _auth_repo.revoke_token(token)

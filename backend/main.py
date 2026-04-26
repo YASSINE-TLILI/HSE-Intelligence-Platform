@@ -9,6 +9,7 @@ from app.middleware.cors import register_cors
 from app.middleware.error_handler import register_error_handlers
 from app.middleware.logging import register_logging
 from app.services.bootstrap_service import BootstrapService
+from app.api.v1.entities import router as entities_router
 
 app = FastAPI(
     title="HSE Gestion API",
@@ -23,6 +24,7 @@ register_logging(app)
 register_error_handlers(app)
 
 app.include_router(api_router)
+app.include_router(entities_router, prefix="/api/v1")
 
 uploads_dir = Path(__file__).resolve().parent / "uploads"
 uploads_dir.mkdir(parents=True, exist_ok=True)

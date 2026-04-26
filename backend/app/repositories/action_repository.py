@@ -1,6 +1,8 @@
+# app/repositories/action_repository.py
+
 from typing import Any
 
-from app.core.database import db_cursor, fetch_one
+from app.core.database import db_cursor, fetch_all, fetch_one
 
 
 class ActionRepository:
@@ -9,11 +11,46 @@ class ActionRepository:
     def find_by_id(self, action_id: int) -> dict[str, Any] | None:
         return fetch_one(
             """
-            SELECT id_action, description, date_debut, date_fin_prevue, date_cloture,
-                   statut, preuve_photo, id_incident, id_responsable_secteur
-            FROM action_corrective WHERE id_action = %s LIMIT 1
+            SELECT
+                a.id_action,
+                a.description,
+                a.date_debut,
+                a.date_fin_prevue,
+                a.date_cloture,
+                a.statut,
+                a.preuve_photo,
+                a.id_incident,
+                a.id_responsable_secteur,
+                CONCAT(COALESCE(u.prenom, ''), ' ', COALESCE(u.nom, '')) AS nom_responsable
+            FROM action_corrective a
+            LEFT JOIN utilisateur u ON u.id = a.id_responsable_secteur
+            WHERE a.id_action = %s
+            LIMIT 1
             """,
             (action_id,),
+        )
+
+    def find_by_incident(self, incident_id: int) -> list[dict[str, Any]]:
+        """Retourne toutes les actions correctives liées à un incident."""
+        return fetch_all(
+            """
+            SELECT
+                a.id_action,
+                a.description,
+                a.date_debut,
+                a.date_fin_prevue,
+                a.date_cloture,
+                a.statut,
+                a.preuve_photo,
+                a.id_incident,
+                a.id_responsable_secteur,
+                CONCAT(COALESCE(u.prenom, ''), ' ', COALESCE(u.nom, '')) AS nom_responsable
+            FROM action_corrective a
+            LEFT JOIN utilisateur u ON u.id = a.id_responsable_secteur
+            WHERE a.id_incident = %s
+            ORDER BY a.date_debut ASC
+            """,
+            (incident_id,),
         )
 
     def create(

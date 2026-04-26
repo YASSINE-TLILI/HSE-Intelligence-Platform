@@ -1,30 +1,59 @@
-from app.services.incident_service import IncidentService
-from app.services.notification_service import NotificationService
+from app.core.constants import WORKFLOW_TRANSITIONS
+from app.core.exceptions import ForbiddenError, ValidationError
+from app.repositories.incident_repository import IncidentRepository
+from app.repositories.validation_repository import ValidationRepository
 from app.services.validation_service import ValidationService
 
-_incident_service = IncidentService()
-_validation_service = ValidationService()
-_notif_service = NotificationService()
+_incident_repo   = IncidentRepository()
+_validation_repo = ValidationRepository()
+_validation_svc  = ValidationService()
 
 
 class WorkflowService:
-    """Orchestre le workflow de validation d'un incident."""
 
     def validate_incident(
         self,
         incident_id: int,
         level: str,
-        status_to_set: str,
-        status_label: str,
+        validation_status: str,      # Statut pour la table validation (ex: "VALIDE_SECTEUR")
+        incident_new_status: str,    # Statut pour la table incident (ex: "EN_ATTENTE_VALIDATION_ZONE")
         comment: str | None,
         validated_by: int,
     ) -> dict:
-        _incident_service.update_status(incident_id, status_to_set)
-        _validation_service.save_validation(
+        """
+        Applique une décision de validation à un incident.
+
+        Workflow complet :
+          En attente
+            → SECTEUR valide  → validation_status="VALIDE_SECTEUR", incident_new_status="EN_ATTENTE_VALIDATION_ZONE"
+            → ZONE    valide  → validation_status="VALIDE_ZONE",    incident_new_status="EN_ATTENTE_VALIDATION_ENTITE"
+            → ENTITE  valide  → validation_status="VALIDE_ENTITE",  incident_new_status="CLOTURE"
+          Rejet → validation_status="REJETE", incident_new_status="REJETE"
+        """
+        level = level.upper()
+
+        # Vérifier que l'incident existe
+        incident = _incident_repo.find_by_id(incident_id)
+        if not incident:
+            raise ValidationError("Incident introuvable.")
+
+        # Enregistrer la décision dans la table validation
+        _validation_svc.save_validation(
             incident_id=incident_id,
             level=level,
-            status=status_label,
-            description=comment or f"{status_label.title()} {level.lower()}",
+            status=validation_status,
+            description=comment,
             validated_by=validated_by,
         )
-        return {"message": f"{status_label.title()} {level.lower()} enregistrée."}
+
+        # Mettre à jour le statut de l'incident
+        _incident_repo.update_status(incident_id, incident_new_status)
+
+        return {
+            "incident_id":  incident_id,
+            "level":        level,
+            "decision":     validation_status,
+            "new_status":   incident_new_status,
+            "comment":      comment,
+            "validated_by": validated_by,
+        }

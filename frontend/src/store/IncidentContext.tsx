@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { apiRequest } from '../services';
 import type { Incident } from '../types/';
+
 interface IncidentContextType {
   incidents: Incident[];
   isLoading: boolean;
@@ -58,14 +59,9 @@ export function IncidentProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteIncident = async (id: string) => {
-    try {
-      await apiRequest(`/api/incidents/${id}`, { method: 'DELETE' });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erreur inconnue';
-      if (!message.includes('404')) {
-        throw error;
-      }
-    }
+    // On appelle d'abord l'API — si elle échoue, on NE met PAS à jour l'état local
+    await apiRequest(`/api/incidents/${id}`, { method: 'DELETE' });
+    // Seulement si la requête réussit (pas d'exception), on retire l'incident du state
     setIncidents((prev) => prev.filter((incident) => incident.id !== id));
   };
 

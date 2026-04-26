@@ -1,38 +1,54 @@
-export async function readApiResponse(response: Response): Promise<unknown> {
-  const raw = await response.text();
-  let data: unknown = null;
+// http.ts — gestion robuste des réponses API
 
-  if (raw) {
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public body?: unknown,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+export async function readApiResponse<T = unknown>(response: Response): Promise<T> {
+  // Tente de lire le corps JSON dans tous les cas
+  let body: unknown;
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
     try {
-      data = JSON.parse(raw);
+      body = await response.json();
     } catch {
-      data = null;
+      body = null;
+    }
+  } else {
+    // Réponse non-JSON (ex: 204 No Content, HTML d'erreur nginx…)
+    try {
+      body = await response.text();
+    } catch {
+      body = null;
     }
   }
 
+  // Si la réponse est en erreur, on lance une exception avec les détails
   if (!response.ok) {
-    const dataObj = data as Record<string, unknown> | null;
-    const detailMessage =
-      typeof dataObj?.detail === 'string'
-        ? dataObj.detail
-        : Array.isArray(dataObj?.detail) &&
-            (dataObj.detail[0] as Record<string, unknown>)?.msg
-          ? String((dataObj.detail[0] as Record<string, unknown>).msg)
-          : null;
-
-    const fallback =
-      raw.startsWith('<!DOCTYPE') || raw.startsWith('<html')
-        ? "La réponse de l'API est HTML. Vérifiez que `npm run api` est lancé et que le proxy `/api` est actif."
-        : `Erreur HTTP ${response.status}`;
-
-    throw new Error(
-      (dataObj as Record<string, string> | null)?.message || detailMessage || fallback,
-    );
+    // Essaie d'extraire un message lisible depuis le corps
+    let message = `Erreur HTTP ${response.status}`;
+    if (body && typeof body === 'object' && body !== null) {
+      const b = body as Record<string, unknown>;
+      if (typeof b['detail'] === 'string') message = b['detail'];
+      else if (typeof b['message'] === 'string') message = b['message'];
+    } else if (typeof body === 'string' && body.length > 0 && body.length < 200) {
+      message = body;
+    }
+    throw new ApiError(response.status, message, body);
   }
 
-  if (data === null) {
-    throw new Error('Réponse API invalide: JSON attendu.');
+  // 204 No Content — pas de corps
+  if (response.status === 204) {
+    return undefined as unknown as T;
   }
 
-  return data;
+  return body as T;
 }

@@ -1,10 +1,11 @@
+# app/services/validation_service.py
+
+from app.core.constants import PENDING_STATUSES_BY_LEVEL
 from app.repositories.incident_repository import IncidentRepository
 from app.repositories.validation_repository import ValidationRepository
-from app.services.incident_service import IncidentService
 
 _validation_repo = ValidationRepository()
-_incident_repo = IncidentRepository()
-_incident_service = IncidentService()
+_incident_repo   = IncidentRepository()
 
 
 class ValidationService:
@@ -23,14 +24,13 @@ class ValidationService:
         return _validation_repo.find_by_incident(incident_id)
 
     def get_pending_validations(self, level: str, user: dict) -> list[dict]:
-        level = (level or "").upper()
-        statuses = ["DECLARE"]
-        if level == "ZONE":
-            statuses = ["VALIDE_SECTEUR", "EN_ATTENTE_VALIDATION_ZONE"]
-        elif level == "HSE":
-            statuses = ["VALIDE_ZONE", "EN_ATTENTE_VALIDATION_HSE"]
-        elif level == "SECTEUR":
-            statuses = ["DECLARE", "EN_ATTENTE_VALIDATION_SECTEUR"]
+        """Retourne les incidents en attente de validation pour un niveau donné."""
+        level = (level or "SECTEUR").upper()
 
+        # Import ici pour éviter la dépendance circulaire
+        from app.services.incident_service import IncidentService
+        _incident_service = IncidentService()
+
+        statuses = PENDING_STATUSES_BY_LEVEL.get(level, ["en attente"])
         where_scope, params_scope = _incident_service._build_scope_filter(user)
         return _incident_repo.find_in_scope_by_statuses(statuses, where_scope, params_scope)

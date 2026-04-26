@@ -10,12 +10,14 @@ from .notifications import router as notifications_router
 from .reports import router as reports_router
 from .safety import router as safety_router
 from .validations import router as validations_router
+from .users import router as users_router
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(health_router, tags=["health"])
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
 api_router.include_router(admin_router, prefix="/admin", tags=["admin"])
 api_router.include_router(incidents_router, prefix="/incidents", tags=["incidents"])
+api_router.include_router(users_router, prefix="/users", tags=["users"])
 api_router.include_router(validations_router, tags=["validations"])
 api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(actions_router, tags=["actions"])

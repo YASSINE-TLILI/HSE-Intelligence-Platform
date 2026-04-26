@@ -1,9 +1,10 @@
 // ─── Auth ───────────────────────────────────────────────────────────────────
 export type UserRole =
+  | 'SOUS_TRAITANT'
   | 'DECLARANT'
   | 'RESPONSABLE_SECTEUR'
   | 'RESPONSABLE_ZONE'
-  | 'RESPONSABLE_HSE'
+  | 'RESPONSABLE_ENTITE'
   | 'ADMINISTRATEUR';
 
 export interface AuthUser {
@@ -12,23 +13,61 @@ export interface AuthUser {
   prenom: string;
   email: string;
   role: UserRole;
+  scope_id?: number;
 }
 
-
+export interface User {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  role: UserRole;
+  active?: boolean;
+  telephone?: string;
+  adresse?: string;
+  dateNaissance?: string;
+  idSite?: number;
+  idSecteur?: number;
+  idZone?: number;
+  idEntite?: number;
+  nomSecteur?: string;
+  nomZone?: string;
+  nomEntite?: string;
+}
 
 // ─── Incidents ───────────────────────────────────────────────────────────────
-export type Priority = 'Basse' | 'Moyenne' | 'Haute' | 'Critique';
-export type IncidentStatus = 'En attente' | 'En cours' | 'Résolu';
+export type Priority = 'Basse' | 'Moyenne' | 'Critique';
+export type TypeIncident = 'incident' | 'anomalie';
+export type IncidentStatus =
+  | 'En attente'
+  | 'EN_ATTENTE_VALIDATION_SECTEUR'
+  | 'VALIDE_SECTEUR'
+  | 'EN_ATTENTE_VALIDATION_ZONE'
+  | 'VALIDE_ZONE'
+  | 'EN_ATTENTE_VALIDATION_ENTITE'
+  | 'VALIDE_ENTITE'
+  | 'REJETE'
+  | 'CLOTURE';
+
+export interface IncidentStats {
+  total: number;
+  total_incidents: number;
+  total_anomalies: number;
+  en_cours: number;
+  resolus: number;
+  rejetes: number;
+  waiting_for_validation?:number
+}
 
 export interface Incident {
   id: string;
-  title: string;
   zone: string;
   secteur?: string;
   secteurId?: number;
   entiteId?: number;
   entite?: string;
   priority: Priority;
+  type_incident: TypeIncident;
   description: string;
   status: IncidentStatus;
   time: string;
@@ -39,8 +78,43 @@ export interface Incident {
   photoUrl?: string;
 }
 
+// ─── Scope Filters ───────────────────────────────────────────────────────────
+export interface ScopeItem {
+  id: number;
+  nom: string;
+}
+
+export interface ScopeFilters {
+  role: string;
+  scope_id: number | null;
+  entites: ScopeItem[];
+  zones: ScopeItem[];
+  secteurs: ScopeItem[];
+  locked: {
+    entite: boolean;
+    zone: boolean;
+    secteur: boolean;
+  };
+}
+
+export interface EntityScope {
+  role: string;
+  scope_id: number | null;
+  locked: {
+    entite: boolean;
+    zone: boolean;
+    secteur: boolean;
+  };
+  default_entite_id: number | null;
+  default_zone_id: number | null;
+  default_secteur_id: number | null;
+  can_create_entite: boolean;
+  can_create_zone: boolean;
+  can_create_secteur: boolean;
+}
+
 // ─── Validations ─────────────────────────────────────────────────────────────
-export type ValidationLevel = 'SECTEUR' | 'ZONE' | 'HSE';
+export type ValidationLevel = 'SECTEUR' | 'ZONE' | 'ENTITE';
 
 export interface ValidationItem {
   id_validation: number;
@@ -54,10 +128,18 @@ export interface ValidationItem {
 
 export interface PendingIncident {
   id_incident: number;
+  nom: string;
+  prenom: string;
+  date_creation: string;
   titre: string;
   description: string;
+  priorite: Priority;
   statut: string;
   date_declaration: string;
+  nom_zone: string;
+  nom_secteur: string;
+  nom_entite: string;
+  niveau_validation: ValidationLevel;
 }
 
 // ─── Actions correctives ─────────────────────────────────────────────────────

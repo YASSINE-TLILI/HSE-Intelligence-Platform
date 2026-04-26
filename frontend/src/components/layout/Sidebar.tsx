@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
+// src/components/layout/Sidebar.tsx
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard, ClipboardList, Map, BarChart2, Settings, Bell,
-  CheckSquare, Wrench, ShieldCheck, FileText, LogOut,
+  Wrench, ShieldCheck, FileText, LogOut,
   PanelLeftClose, PanelLeftOpen,
+  UsersIcon, Building2, Menu, X,
 } from 'lucide-react';
+
+import { apiRequest } from '../../services/api';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (key: string) => void;
-  navItems: Array<{ icon: React.ComponentType<{ size?: number; strokeWidth?: number }>; label: string; key: string }>;
+  navItems: Array<{
+    icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+    label: string;
+    key: string;
+  }>;
   userInitials: string;
   onLogout: () => void;
 }
@@ -16,91 +24,179 @@ interface SidebarProps {
 export const ALL_NAV_ITEMS = [
   { key: 'dashboard',     icon: LayoutDashboard, label: 'Tableau de bord' },
   { key: 'incidents',     icon: ClipboardList,   label: 'Incidents' },
+  { key: 'users',         icon: UsersIcon,       label: 'Utilisateurs' },
+  { key: 'entites',       icon: Building2,       label: 'Entités' },
   { key: 'map',           icon: Map,             label: 'Carte' },
-  { key: 'stats',         icon: BarChart2,        label: 'Statistiques' },
+  { key: 'stats',         icon: BarChart2,       label: 'Statistiques' },
   { key: 'notifications', icon: Bell,            label: 'Notifications' },
-  { key: 'validations',   icon: CheckSquare,     label: 'Validations' },
-  { key: 'actions',       icon: Wrench,          label: 'Actions Correctives' },
-  { key: 'safety',        icon: ShieldCheck,     label: 'Safety Score' },
   { key: 'reports',       icon: FileText,        label: 'Rapports' },
   { key: 'settings',      icon: Settings,        label: 'Paramètres' },
 ] as const;
 
-export default function Sidebar({ activeTab, setActiveTab, navItems, userInitials, onLogout }: SidebarProps) {
+export default function Sidebar({
+  activeTab,
+  setActiveTab,
+  navItems,
+  userInitials,
+  onLogout
+}: SidebarProps) {
+
   const [expanded, setExpanded] = useState(false);
-  const widthClass    = expanded ? 'w-64' : 'w-20';
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // 🔔 Notifications polling
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const data = await apiRequest<{ count: number }>('/api/notifications/unread-count');
+        setUnreadCount(data.count || 0);
+      } catch {
+        // silence
+      }
+    };
+
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // fermer mobile après navigation
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [activeTab]);
+
+  // bloquer scroll mobile
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   const navAlignClass = expanded ? 'items-stretch px-3' : 'items-center';
-  const logoSizeClass = expanded ? 'w-11 h-11 text-lg' : 'w-12 h-12 text-xl';
 
   return (
-    <aside className={`${widthClass} bg-slate-900 flex flex-col py-5 h-full flex-shrink-0 z-20 transition-all duration-300 ease-out`}>
-      <div className={`px-3 mb-6 flex items-center ${expanded ? 'justify-between' : 'justify-center'}`}>
-        <div className={`${logoSizeClass} bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-blue-500/20 cursor-pointer hover:bg-blue-600 transition-colors`}>
-          H
+    <>
+      {/* ================= DESKTOP ================= */}
+      <aside className={`hidden md:flex ${expanded ? 'w-64' : 'w-20'} bg-slate-900 flex-col py-5 h-full flex-shrink-0 transition-all duration-300`}>
+
+        {/* HEADER */}
+        <div className={`px-3 mb-6 flex items-center ${expanded ? 'justify-between' : 'justify-center'}`}>
+          <div className="w-11 h-11 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold">
+            H
+          </div>
+
+          {expanded ? (
+            <button onClick={() => setExpanded(false)}>
+              <PanelLeftClose size={18} />
+            </button>
+          ) : (
+            <button onClick={() => setExpanded(true)}>
+              <PanelLeftOpen size={16} />
+            </button>
+          )}
         </div>
-        {expanded && (
-          <button
-            type="button"
-            onClick={() => setExpanded(false)}
-            className="p-2 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-            title="Réduire le menu"
-          >
-            <PanelLeftClose size={18} />
-          </button>
-        )}
-        {!expanded && (
-          <button
-            type="button"
-            onClick={() => setExpanded(true)}
-            className="absolute top-5 right-2 p-1.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-            title="Étendre le menu"
-          >
-            <PanelLeftOpen size={16} />
-          </button>
-        )}
-      </div>
 
-      <nav className={`flex-1 flex flex-col gap-4 w-full ${navAlignClass}`}>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = item.key === activeTab;
-          return (
-            <div key={item.key} className={`relative w-full flex group ${expanded ? '' : 'justify-center'}`} title={item.label}>
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-cyan-400 rounded-r-md" />
-              )}
-              <button
-                onClick={() => setActiveTab(item.key)}
-                className={`flex items-center gap-3 ${expanded ? 'w-full px-3 py-3' : 'p-3'} rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? 'bg-slate-800 text-blue-400 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800 active:scale-95'
-                }`}
-              >
-                <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
-                {expanded && <span className="text-sm font-medium">{item.label}</span>}
-              </button>
-            </div>
-          );
-        })}
+        {/* NAV */}
+        <nav className={`flex-1 flex flex-col gap-1 w-full ${navAlignClass}`}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.key === activeTab;
+            const isNotif = item.key === 'notifications';
 
-        <div className={`relative w-full flex group ${expanded ? '' : 'justify-center'}`} title="Déconnexion">
-          <button
-            type="button"
-            onClick={onLogout}
-            className={`flex items-center gap-3 ${expanded ? 'w-full px-3 py-3' : 'p-3'} rounded-xl text-slate-400 hover:text-red-400 hover:bg-slate-800 active:scale-95 transition-all duration-200`}
-          >
-            <LogOut size={22} strokeWidth={1.5} />
-            {expanded && <span className="text-sm font-medium">Déconnexion</span>}
+            return (
+              <div key={item.key} className={`relative w-full flex ${expanded ? '' : 'justify-center'}`}>
+                
+                <button
+                  onClick={() => setActiveTab(item.key)}
+                  className={`flex items-center gap-3 ${expanded ? 'w-full px-3 py-2.5' : 'p-3'} rounded-xl ${
+                    isActive ? 'bg-slate-800 text-blue-400' : 'text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon size={20} />
+
+                  {expanded && <span>{item.label}</span>}
+
+                  {/* 🔴 BADGE */}
+                  {isNotif && unreadCount > 0 && (
+                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full ${
+                      isActive ? 'bg-white text-blue-600' : 'bg-red-500 text-white'
+                    }`}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              </div>
+            );
+          })}
+
+          {/* LOGOUT */}
+          <button onClick={onLogout} className="mt-2 text-red-400">
+            <LogOut size={20} />
+            {expanded && <span>Déconnexion</span>}
           </button>
+        </nav>
+
+        {/* USER */}
+        <div className="mt-4 flex justify-center">
+          <div className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-white">
+            {userInitials}
+          </div>
         </div>
-      </nav>
+      </aside>
 
-      <div className={`mt-4 px-3 flex ${expanded ? 'justify-start' : 'justify-center'}`}>
-        <button className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md hover:bg-blue-600 transition-colors active:scale-95">
-          {userInitials}
+      {/* ================= MOBILE ================= */}
+      <div className="md:hidden flex justify-between p-3 bg-slate-900">
+        <span className="text-white">HSE</span>
+        <button onClick={() => setMobileOpen(true)}>
+          <Menu size={22} />
         </button>
       </div>
-    </aside>
+
+      {/* OVERLAY */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+      )}
+
+      {/* DRAWER */}
+      <div className={`fixed top-0 left-0 h-full w-72 bg-slate-900 transition-transform ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+
+        <button onClick={() => setMobileOpen(false)}>
+          <X />
+        </button>
+
+        <nav className="flex flex-col p-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.key === activeTab;
+            const isNotif = item.key === 'notifications';
+
+            return (
+              <button
+                key={item.key}
+                onClick={() => setActiveTab(item.key)}
+                className={`flex items-center gap-3 p-3 ${
+                  isActive ? 'bg-slate-800 text-blue-400' : 'text-white'
+                }`}
+              >
+                <Icon size={20} />
+                <span>{item.label}</span>
+
+                {/* 🔴 BADGE */}
+                {isNotif && unreadCount > 0 && (
+                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-red-500 text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          <button onClick={onLogout} className="text-red-400 mt-3">
+            Déconnexion
+          </button>
+        </nav>
+      </div>
+    </>
   );
 }

@@ -12,7 +12,7 @@ export default function RiskScore() {
   const { incidents } = useIncidents();
 
   const zoneStats = ZONES.map((zone) => {
-    const zoneIncidents = incidents.filter(i => i.zone === zone.name && i.status !== 'Résolu');
+    const zoneIncidents = incidents.filter(i => i.zone === zone.name && i.status !== 'CLOTURE');
     const score         = Math.min(100, zoneIncidents.reduce((acc, curr) => acc + curr.score, 0));
     return { ...zone, incidentsCount: zoneIncidents.length, score };
   }).sort((a, b) => b.score - a.score);

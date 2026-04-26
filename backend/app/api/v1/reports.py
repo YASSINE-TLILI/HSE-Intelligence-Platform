@@ -14,7 +14,7 @@ _service = ReportService()
 @router.post("/generate", status_code=201)
 def generate(
     payload: ReportGenerateRequest,
-    user=Depends(require_roles("RESPONSABLE_HSE", "RESPONSABLE_ZONE", "ADMINISTRATEUR")),
+    user=Depends(require_roles("RESPONSABLE_ENTITE", "RESPONSABLE_ZONE", "ADMINISTRATEUR")),
 ):
     return _service.generate_report(
         date_start=payload.dateStart,

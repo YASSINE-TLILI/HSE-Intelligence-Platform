@@ -23,5 +23,6 @@ def api_root():
             "/api/auth/setup-password",
             "/api/admin/review",
             "/api/incidents",
+            "api/users"
         ],
     }

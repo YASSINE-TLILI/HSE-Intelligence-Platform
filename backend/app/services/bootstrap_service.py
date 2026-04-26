@@ -30,7 +30,7 @@ class BootstrapService:
                   pin_hash VARCHAR(255) NOT NULL,
                   status ENUM('PENDING','APPROVED','DECLINED','COMPLETED') NOT NULL DEFAULT 'PENDING',
                   admin_token VARCHAR(100) NOT NULL UNIQUE,
-                  assigned_role ENUM('DECLARANT','RESPONSABLE_SECTEUR','RESPONSABLE_ZONE','RESPONSABLE_HSE','ADMINISTRATEUR') DEFAULT NULL,
+                  assigned_role ENUM('DECLARANT','RESPONSABLE_SECTEUR','RESPONSABLE_ZONE','RESPONSABLE_ENTITE','ADMINISTRATEUR') DEFAULT NULL,
                   company_email VARCHAR(150) DEFAULT NULL,
                   decision_note TEXT DEFAULT NULL,
                   id_user INT DEFAULT NULL,
