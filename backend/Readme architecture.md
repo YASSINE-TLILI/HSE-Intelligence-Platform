@@ -18,8 +18,8 @@
 │   │       ├── safety.py
 │   │       └── validations.py
 │   ├── core/
-│   │   ├── config.py                # Settings (inchangé)
-│   │   ├── constants.py             # Constantes métier (inchangé)
+│   │   ├── config.py               
+│   │   ├── constants.py             
 │   │   ├── database.py              # Connexion DB (inchangé)
 │   │   ├── deps.py                  # Dépendances FastAPI (utilise UserRepository)
 │   │   ├── exceptions.py            # ★ NOUVEAU — exceptions métier centralisées
@@ -116,29 +116,7 @@ HTTP Request
     → Database (app/core/database.py)
 ```
 
-## Variables d'environnement
 
-Créer un fichier `.env` à la racine :
-
-```env
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=gestion_hse
-API_PORT=4002
-APP_URL=http://localhost:3000
-JWT_SECRET=change-me-in-production
-COMPANY_EMAIL_DOMAIN=company.com
-ADMIN_APPROVAL_EMAIL=admin@company.local
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=no-reply@company.local
-```
-
-## Lancement
 
 ```bash
 pip install -r requirements.txt
